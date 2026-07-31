@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Chunq";
+  src: url("/fonts/Chunq.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  --background: #000000;
+  --foreground: #D4C5A0;
+  --orange: #E8621A;
+  --blood: #8B1A1A;
+  --straw: #C9A84C;
+  --ash: #6B4E3D;
+  --bone: #D4C5A0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+input:focus {
+  box-shadow: 0 0 12px rgba(139, 26, 26, 0.6);
+}
+
+button:hover {
+  box-shadow: 0 0 16px rgba(232, 98, 26, 0.4);
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-8px);
+  }
+
+  40% {
+    transform: translateX(8px);
+  }
+
+  60% {
+    transform: translateX(-6px);
+  }
+
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.shake {
+  animation: shake 0.4s ease;
+}
+
+@keyframes slideInRight {
+  0% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes loadingBar {
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes curtainDown {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(0%);
+  }
+}
+
+.curtain-down {
+  animation: curtainDown 5s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+
+/* efeito transição */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.6s ease 5s forwards;
+}
+
+.fade-in-fast {
+  opacity: 0;
+  animation: fadeIn 0.6s ease forwards;
+}

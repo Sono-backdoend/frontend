@@ -59,10 +59,11 @@ jobs:
             sudo docker rm -f sono-frontend 2>/dev/null || true
 
             sudo docker run -d \
-              --name sono-frontend \
-              -p 3000:3000 \
-              --restart unless-stopped \
-              "$IMAGE_URI"
+            --name sono-frontend \
+            --network sono-network \
+            -p 3000:3000 \
+            --restart unless-stopped \
+            "$IMAGE_URI"
 
             sudo docker image prune -f
             sudo docker ps

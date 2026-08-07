@@ -20,8 +20,8 @@ const rye = Rye({
 });
 
 export const metadata: Metadata = {
-  title: "Arraiá Macabro",
-  description: "Pac Birthday 🎃.",
+  title: "Fight Club",
+  description: "Você não fala sobre isso.",
   icons: {
     icon: "/favicon.svg",
   },

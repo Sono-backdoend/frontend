@@ -1,12 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Particles from "react-tsparticles";
-import { loadSlim } from "tsparticles-slim";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Mousewheel, EffectCreative } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/effect-creative';
+import { useState, useEffect } from "react";
 import Lottie from "lottie-react";
 import skullAnimation from "@/public/animations/skull.json";
 
@@ -16,49 +10,98 @@ function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`;
 }
 
+// retângulo aproximado da área urbana de Foz do Iguaçu
+const FOZ_BOUNDS = {
+  latMin: -25.560,
+  latMax: -25.470,
+  lngMin: -54.590,
+  lngMax: -54.520,
+};
+
+const FRASES = [
+  "As coisas que você possui acabam possuindo você.",
+  "Só depois de perder tudo é que somos livres para fazer qualquer coisa.",
+  "Você não é seu emprego. Você não é o dinheiro que tem no banco.",
+  "Este é o seu tempo de vida acabando, um minuto de cada vez.",
+  "Você conheceu a mim no momento mais estranho da sua vida.",
+];
+
+function sortearCoordenada() {
+  const lat = FOZ_BOUNDS.latMin + Math.random() * (FOZ_BOUNDS.latMax - FOZ_BOUNDS.latMin);
+  const lng = FOZ_BOUNDS.lngMin + Math.random() * (FOZ_BOUNDS.lngMax - FOZ_BOUNDS.lngMin);
+  return { lat: lat.toFixed(6), lng: lng.toFixed(6) };
+}
+
+function gerarEncontro() {
+  const dias = 3 + Math.floor(Math.random() * 25);
+  const data = new Date();
+  data.setDate(data.getDate() + dias);
+
+  const hora = 22 + Math.floor(Math.random() * 3);
+  const minuto = Math.random() > 0.5 ? "30" : "00";
+  const coord = sortearCoordenada();
+
+  return {
+    data: data.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+    }),
+    hora: `${String(hora % 24).padStart(2, "0")}:${minuto}`,
+    local: `${coord.lat}, ${coord.lng}`,
+    coord,
+    frase: FRASES[Math.floor(Math.random() * FRASES.length)],
+  };
+}
+
+function mapaUrl(lat: string, lng: string) {
+  const params = [
+    `center=${lat},${lng}`,
+    "zoom=16",
+    "size=600x300",
+    "scale=2",
+    "maptype=roadmap",
+    `markers=color:red%7C${lat},${lng}`,
+    "style=feature:all%7Celement:geometry%7Ccolor:0x1a1a1a",
+    "style=feature:all%7Celement:labels.text.fill%7Ccolor:0x666666",
+    "style=feature:all%7Celement:labels.text.stroke%7Ccolor:0x000000",
+    "style=feature:road%7Celement:geometry%7Ccolor:0x2b2b2b",
+    "style=feature:water%7Celement:geometry%7Ccolor:0x0d0d0d",
+    "style=feature:poi%7Cvisibility:off",
+    `key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}`,
+  ];
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.join("&")}`;
+}
+
 export default function Home() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
-  const [phase, setPhase] = useState<"login" | "transition" | "invite">("login");
+  const [phase, setPhase] = useState<"login" | "invite">("login");
   const [guestName, setGuestName] = useState("");
-  const [plusOne, setPlusOne] = useState<boolean | null>(null);
-  const [plusOneName, setPlusOneName] = useState("");
-  const [plusOnePhone, setPlusOnePhone] = useState("");
-  const [responded, setResponded] = useState(false);
-  const [phoneError, setPhoneError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [showCode, setShowCode] = useState(false);
+  const [encontro, setEncontro] = useState<ReturnType<typeof gerarEncontro> | null>(null);
 
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 5000);
-    const savedCode = localStorage.getItem("arraia_code");
+    const savedCode = localStorage.getItem("fc_code");
     if (savedCode) {
       setCode(savedCode);
       validateCode(savedCode);
     }
   }, []);
 
-  const particlesInit = useCallback(async (engine: unknown) => {
-    await loadSlim(engine as Parameters<typeof loadSlim>[0]);
-  }, []);
-
-  function formatPhone(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 11);
-    if (digits.length === 0) return "";
-    if (digits.length <= 2) return `(${digits}`;
-    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    if (digits.length <= 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-    return value;
-  }
-
-  function isValidPhone(value: string) {
-    const digits = value.replace(/\D/g, "");
-    return digits.length === 11;
-  }
-
   async function validateCode(codeToValidate: string) {
+    // MOCK TEMPORÁRIO — remover quando o backend estiver rodando
+    if (codeToValidate.toLowerCase() === "teste") {
+      setGuestName("Pac");
+      setEncontro(gerarEncontro());
+      setPhase("invite");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -69,17 +112,16 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) {
-        localStorage.removeItem("arraia_code");
-        setError("Código inválido. Será que você foi mesmo convidado?");
+        localStorage.removeItem("fc_code");
+        setError("Código inválido. Você não deveria estar aqui.");
         setShake(true);
         setTimeout(() => setShake(false), 400);
         return;
       }
-      localStorage.setItem("arraia_code", codeToValidate);
+      localStorage.setItem("fc_code", codeToValidate);
       setGuestName(data.guest.name);
-      if (data.alreadyResponded) setResponded(true);
-      setPhase("transition");
-      setTimeout(() => setPhase("invite"), 1200);
+      setEncontro(gerarEncontro());
+      setPhase("invite");
     } catch {
       setError("Erro de conexão. Tente novamente.");
     } finally {
@@ -92,32 +134,8 @@ export default function Home() {
     await validateCode(code);
   }
 
-  async function handleRespond() {
-    if (plusOne === true && !isValidPhone(plusOnePhone)) {
-      setPhoneError("Número inválido. Use o formato (XX) XXXXX-XXXX");
-      return;
-    }
-    setPhoneError("");
-    try {
-      await fetch(apiUrl("/api/invite/respond"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: code.toLowerCase(),
-          confirmed: true,
-          plusOne: plusOne === true,
-          plusOneName: plusOne === true ? plusOneName : undefined,
-          plusOnePhone: plusOne === true ? plusOnePhone : undefined,
-        }),
-      });
-      setResponded(true);
-    } catch {
-      console.error("Erro ao registrar resposta");
-    }
-  }
-
   return (
-    <main className="relative min-h-screen bg-black flex flex-col items-center justify-center gap-8 overflow-hidden">
+    <main className="relative min-h-screen bg-black flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
 
       {/* LOADING */}
       {isLoading && (
@@ -125,210 +143,91 @@ export default function Home() {
           <div className="fixed inset-0 z-30 bg-white" />
           <div className="fixed inset-0 z-40 bg-black curtain-down" />
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 pointer-events-none">
-            <Lottie animationData={skullAnimation} loop={true} style={{ width: 150, height: 150 }} />
-            <div className="w-48 h-1 bg-gray-900 rounded-full overflow-hidden">
-              <div className="h-full bg-orange-700 rounded-full" style={{ animation: "loadingBar 5s linear forwards" }} />
+            <Lottie animationData={skullAnimation} loop style={{ width: 150, height: 150 }} />
+            <div className="w-48 h-1 bg-neutral-900 overflow-hidden">
+              <div className="h-full bg-red-800" style={{ animation: "loadingBar 5s linear forwards" }} />
             </div>
           </div>
         </>
       )}
 
-      {/* PARTÍCULAS */}
-      <Particles
-        id="tsparticles"
-        init={particlesInit}
-        style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}
-        options={{
-          background: { color: { value: "transparent" } },
-          particles: {
-            number: { value: 40 },
-            color: { value: ["#E8621A", "#8B1A1A", "#C9A84C", "#ff4400"] },
-            shape: { type: "circle" },
-            opacity: { value: 0.4 },
-            size: { value: { min: 1, max: 3 } },
-            move: { enable: true, speed: 1.5, direction: "top", outModes: { default: "out" }, random: true, straight: false },
-          },
-          detectRetina: true,
-        }}
-      />
+      {/* ESTÁTICA DE TV */}
+      <div className="tv-noise" />
+      <div className="tv-scanlines" />
+      <div className="tv-sweep" />
 
-      {/* TELA LOGIN */}
+      {/* LOGIN */}
       {phase === "login" && (
-        <div className="relative z-10 flex flex-col items-center gap-6 w-full px-6 fade-in">
-          <img src="/images/logo.png" alt="Arraiá Macabro" className="w-48 sm:w-64 h-auto" />
+        <div className="relative z-10 flex flex-col items-center gap-8 w-full fade-in">
+          <img src="/images/soap.png" alt="" className="w-48 sm:w-64 h-auto flicker" />
+
           <div className="w-full max-w-xs flex flex-col gap-4">
             <input
               type="text"
-              placeholder="Digite seu código"
+              placeholder="CÓDIGO"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              className={`w-full bg-transparent border border-orange-900 text-white text-center text-base tracking-widest px-4 py-3 rounded outline-none focus:border-orange-600 transition-colors uppercase ${shake ? "shake" : ""}`}
+              className={`w-full bg-transparent border border-neutral-700 text-neutral-200 text-center text-base tracking-[0.4em] px-4 py-3 outline-none focus:border-red-700 transition-colors uppercase ${shake ? "shake" : ""}`}
             />
-            {error && <p className="text-orange-500 text-sm text-center">{error}</p>}
+            {error && <p className="text-red-700 text-xs text-center tracking-widest uppercase">{error}</p>}
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full bg-orange-900 hover:bg-orange-800 disabled:opacity-50 text-white font-bold py-3 rounded tracking-widest transition-colors"
+              className="w-full bg-neutral-900 hover:bg-red-900 disabled:opacity-40 text-neutral-200 py-3 tracking-[0.3em] text-sm uppercase transition-colors border border-neutral-800"
             >
-              {loading ? "VERIFICANDO..." : "ENTRAR"}
+              {loading ? "verificando" : "entrar"}
             </button>
           </div>
         </div>
       )}
 
-      {/* CONTEÚDO DO CONVITE */}
-      {phase === "invite" && (
-        <div className="fixed inset-0 z-10 w-full h-full fade-in-fast">
-          <Swiper
-            direction="vertical"
-            slidesPerView={1}
-            spaceBetween={0}
-            mousewheel={{ sensitivity: 1 }}
-            speed={800}
-            modules={[Mousewheel, EffectCreative]}
-            effect="creative"
-            creativeEffect={{
-              prev: { translate: [0, '-20%', -1], opacity: 0 },
-              next: { translate: [0, '100%', 0], opacity: 1 },
-            }}
-            className="w-full h-full"
-          >
-            {/* SLIDE 1 */}
-            <SwiperSlide>
-              <div className="w-full h-full flex flex-col items-center justify-center gap-4 px-6">
-                <img src="/images/logo.png" alt="Arraiá Macabro" className="w-48 sm:w-72 h-auto" />
-                <p className="text-center text-base sm:text-xl sm:whitespace-nowrap" style={{ fontFamily: "var(--font-cinzel)", color: "var(--bone)" }}>
-                  Olá, <span style={{ color: "var(--straw)", textShadow: "0 0 20px rgba(201,168,76,0.8), 0 0 40px rgba(201,168,76,0.4)" }}>{guestName}</span>,
-                  <br className="sm:hidden" />
-                  {" "}seja bem-vindo(a) ao Arraiá Macabro
-                </p>
-                <p className="text-center text-sm sm:text-base max-w-sm" style={{ fontFamily: "var(--font-cinzel)", color: "var(--bone)", opacity: 0.8 }}>
-                  Em celebração ao meu aniversário, apresento a nova edição do PacJunino — o Arraiá Macabro. Role para descobrir o que está por vir.
-                </p>
-                <div className="animate-bounce" style={{ color: "#E8621A", fontSize: "1.2rem" }}>▼</div>
+      {/* CONVITE */}
+      {phase === "invite" && encontro && (
+        <div className="relative z-10 flex flex-col items-center gap-8 w-full max-w-md fade-in-fast">
+
+          <img src="/images/soap.png" alt="" className="w-40 sm:w-56 h-auto flicker" />
+
+          <p className="text-center text-xs tracking-[0.35em] uppercase text-neutral-500">
+            primeira regra: você não fala sobre isso
+          </p>
+
+          <div className="w-full h-px bg-neutral-800" />
+
+          <p className="text-center text-lg sm:text-xl text-neutral-200">
+            <span className="text-red-700 flicker">{guestName}</span>, você foi escolhido.
+          </p>
+
+          <div className="w-full flex flex-col gap-3">
+            {[
+              { label: "DATA", value: encontro.data },
+              { label: "HORA", value: encontro.hora },
+              { label: "COORDENADAS", value: encontro.local },
+            ].map((item) => (
+              <div key={item.label} className="flex justify-between items-baseline border-b border-neutral-800 pb-2 gap-4">
+                <span className="text-[0.65rem] tracking-[0.25em] text-neutral-600 uppercase shrink-0">
+                  {item.label}
+                </span>
+                <span className="text-sm text-neutral-300 text-right">{item.value}</span>
               </div>
-            </SwiperSlide>
+            ))}
+          </div>
 
-            {/* SLIDE 2 */}
-            <SwiperSlide>
-              <div className="w-full h-full flex flex-col items-center justify-center gap-5 px-6 overflow-y-auto py-6">
-                <div className="flex items-center gap-3 w-full max-w-xs">
-                  <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(201,168,76,0.4))" }} />
-                  <p style={{ color: "#C9A84C", fontSize: "0.8rem", letterSpacing: "0.3em", fontFamily: "var(--font-cinzel)", textShadow: "0 0 20px rgba(201,168,76,0.8)" }}>O QUE TE AGUARDA</p>
-                  <div className="flex-1 h-px" style={{ background: "linear-gradient(to left, transparent, rgba(201,168,76,0.4))" }} />
-                </div>
+          {/* MAPA */}
+          <img
+            src={mapaUrl(encontro.coord.lat, encontro.coord.lng)}
+            alt=""
+            className="w-full grayscale-[0.3] contrast-125"
+          />
 
-                <div className="flex gap-8 justify-center">
-                  <div className="flex flex-col items-center gap-1">
-                    <span style={{ color: "#C9A84C", fontSize: "0.6rem", letterSpacing: "0.3em", fontFamily: "var(--font-cinzel)", textShadow: "0 0 20px rgba(201,168,76,0.8)" }}>DJ</span>
-                    <span style={{ color: "#E8621A", fontFamily: "var(--font-cinzel)", fontSize: "1.2rem", textShadow: "0 0 20px rgba(232,98,26,0.8), 0 0 40px rgba(232,98,26,0.4)" }}>Bazan</span>
-                  </div>
-                  <div style={{ width: "1px", background: "rgba(232,98,26,0.3)" }} />
-                  <div className="flex flex-col items-center gap-1">
-                    <span style={{ color: "#C9A84C", fontSize: "0.6rem", letterSpacing: "0.3em", fontFamily: "var(--font-cinzel)", textShadow: "0 0 20px rgba(201,168,76,0.8)" }}>DJ</span>
-                    <span style={{ color: "#E8621A", fontFamily: "var(--font-cinzel)", fontSize: "1.2rem", textShadow: "0 0 20px rgba(232,98,26,0.8), 0 0 40px rgba(232,98,26,0.4)" }}>Kang</span>
-                  </div>
-                </div>
+          <p className="text-center text-sm text-neutral-500 italic max-w-sm leading-relaxed">
+            &ldquo;{encontro.frase}&rdquo;
+          </p>
 
-                <div className="w-full max-w-xs flex flex-col gap-2">
-                  {["Open Chopp", "Vodka", "Energético", "Refrigerante", "Aperitivos"].map((item) => (
-                    <div key={item} className="flex items-center gap-3">
-                      <span style={{ color: "#E8621A", fontSize: "0.5rem" }}>●</span>
-                      <span style={{ color: "var(--bone)", fontFamily: "var(--font-cinzel)", fontSize: "1rem" }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
+          <p className="text-center text-[0.6rem] tracking-[0.3em] uppercase text-neutral-700">
+            não traga ninguém · não conte a ninguém
+          </p>
 
-                <div className="flex items-center gap-3 w-full max-w-xs">
-                  <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(201,168,76,0.4))" }} />
-                  <p style={{ color: "#C9A84C", fontSize: "0.8rem", letterSpacing: "0.3em", fontFamily: "var(--font-cinzel)", textShadow: "0 0 20px rgba(201,168,76,0.8)" }}>A FESTA</p>
-                  <div className="flex-1 h-px" style={{ background: "linear-gradient(to left, transparent, rgba(201,168,76,0.4))" }} />
-                </div>
-
-                <div className="w-full max-w-xs flex flex-col gap-2">
-                  {[
-                    { label: "DATA", value: "Sábado, 20 de Junho" },
-                    { label: "HORA", value: "19:00" },
-                    { label: "LOCAL", value: "Rua Paris, 676" },
-                    { label: "DRESS CODE", value: "Caipira / Terror" },
-                  ].map((item) => (
-                    <div key={item.label} className="flex justify-between border-b pb-2" style={{ borderColor: "rgba(232,98,26,0.3)" }}>
-                      <span style={{ color: "var(--ash)", fontSize: "0.8rem", letterSpacing: "0.15em", fontFamily: "var(--font-cinzel)" }}>{item.label}</span>
-                      <span style={{ color: "var(--bone)", fontFamily: "var(--font-cinzel)", fontSize: "1rem" }}>{item.value}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between border-b pb-2" style={{ borderColor: "rgba(232,98,26,0.3)" }}>
-                    <span style={{ color: "var(--ash)", fontSize: "0.8rem", letterSpacing: "0.15em", fontFamily: "var(--font-cinzel)" }}>VALOR</span>
-                    <span style={{ color: "#E8621A", fontFamily: "var(--font-cinzel)", fontSize: "1rem" }}>R$50 antec. · R$60 na hora</span>
-                  </div>
-                </div>
-
-                <div className="animate-bounce" style={{ color: "#E8621A", fontSize: "1.2rem" }}>▼</div>
-              </div>
-            </SwiperSlide>
-
-            {/* SLIDE 3 */}
-            <SwiperSlide>
-              <div className="w-full h-full flex flex-col items-center justify-center gap-5 px-6 overflow-y-auto py-6">
-                <div className="w-full max-w-xs rounded overflow-hidden" style={{ height: "180px" }}>
-                  <iframe
-                    src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}&q=Rua+Paris,+676,Foz+do+Iguaçu,Paraná`}
-                    width="100%"
-                    height="180"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                  />
-                </div>
-
-                {!responded && (
-                  <div className="w-full max-w-xs flex flex-col gap-4">
-                    <div className="flex flex-col gap-2">
-                      <p className="text-center" style={{
-                        color: "#C9A84C",
-                        fontSize: "0.75rem",
-                        letterSpacing: "0.2em",
-                        fontFamily: "var(--font-cinzel)",
-                        textShadow: "0 0 20px rgba(201,168,76,0.8), 0 0 40px rgba(201,168,76,0.4)"
-                      }}>
-                        DESEJA CONVIDAR ALGUÉM?
-                      </p>
-                      <div className="flex gap-3">
-                        <button onClick={() => setPlusOne(true)} className={`flex-1 py-2 rounded border text-sm transition-colors ${plusOne === true ? "border-orange-600 text-orange-500" : "border-orange-900 text-gray-500"}`}>Sim</button>
-                        <button onClick={() => setPlusOne(false)} className={`flex-1 py-2 rounded border text-sm transition-colors ${plusOne === false ? "border-orange-600 text-orange-500" : "border-orange-900 text-gray-500"}`}>Não</button>
-                      </div>
-                    </div>
-                    {plusOne === true && (
-                      <div className="flex flex-col gap-3">
-                        <input type="text" placeholder="Nome do convidado" value={plusOneName} onChange={(e) => setPlusOneName(e.target.value)} className="w-full bg-transparent border border-orange-900 text-white px-4 py-2 rounded outline-none focus:border-orange-600 transition-colors text-sm" />
-                        <input type="tel" placeholder="WhatsApp com DDD (ex: 45999999999)" value={plusOnePhone} onChange={(e) => setPlusOnePhone(formatPhone(e.target.value))} className="w-full bg-transparent border border-orange-900 text-white px-4 py-2 rounded outline-none focus:border-orange-600 transition-colors text-sm" />
-                        {phoneError && <p className="text-orange-500 text-xs">{phoneError}</p>}
-                      </div>
-                    )}
-
-                    <a href="https://wa.me/5545999414753?text=Olá%2C%20quero%20confirmar%20minha%20presença%20no%20Arraiá%20Macabro."
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => { if (plusOne === true && !isValidPhone(plusOnePhone)) return; handleRespond(); }}
-                      className="w-full text-center bg-orange-900 hover:bg-orange-800 text-white font-bold py-3 rounded tracking-widest transition-colors text-sm"
-                      style={{ fontFamily: "var(--font-cinzel)" }}
-                    >
-                      CONFIRMAR PRESENÇA
-                    </a>
-                  </div>
-                )}
-
-                {responded && (
-                  <div className="text-center flex flex-col gap-3">
-                    <p style={{ fontFamily: "var(--font-cinzel)", color: "var(--straw)", fontSize: "1.1rem" }}>Presença confirmada!</p>
-                    <p style={{ color: "var(--ash)", fontSize: "0.85rem" }}>Aguarde o contato com as informações de pagamento.</p>
-                  </div>
-                )}
-              </div>
-            </SwiperSlide>
-
-          </Swiper>
         </div>
       )}
 

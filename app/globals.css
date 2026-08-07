@@ -122,3 +122,76 @@ button:hover {
   opacity: 0;
   animation: fadeIn 0.6s ease forwards;
 }
+
+/* estática de TV */
+@keyframes noiseShift {
+  0%   { transform: translate(0, 0); }
+  10%  { transform: translate(-5%, -5%); }
+  20%  { transform: translate(-10%, 5%); }
+  30%  { transform: translate(5%, -10%); }
+  40%  { transform: translate(-5%, 15%); }
+  50%  { transform: translate(-10%, 5%); }
+  60%  { transform: translate(15%, 0); }
+  70%  { transform: translate(0, 10%); }
+  80%  { transform: translate(-15%, 0); }
+  90%  { transform: translate(10%, 5%); }
+  100% { transform: translate(5%, 0); }
+}
+
+.tv-noise {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: noiseShift 0.4s steps(2) infinite;
+}
+
+/* linhas de scan */
+.tv-scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.35) 3px,
+    rgba(0, 0, 0, 0.35) 4px
+  );
+}
+
+/* linha de varredura descendo */
+@keyframes scanSweep {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.tv-sweep {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 120px;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.025), transparent);
+  animation: scanSweep 7s linear infinite;
+}
+
+/* glitch no texto */
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; }
+  92%      { opacity: 1; }
+  93%      { opacity: 0.4; }
+  94%      { opacity: 1; }
+  96%      { opacity: 0.7; }
+  97%      { opacity: 1; }
+}
+
+.flicker {
+  animation: textFlicker 6s infinite;
+}

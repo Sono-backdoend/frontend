@@ -46,10 +46,17 @@ NEXT_PUBLIC_GOOGLE_MAPS_KEY="sua_chave"
 Frontend `projeto-x/`:
 
 ├── app/
+
 │   ├── page.tsx
+
 │   ├── layout.tsx
+
 │   └── globals.css
+
 └── public/
+
 	├── images/
+	
 	├── fonts/
+	
 	└── animations/

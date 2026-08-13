@@ -74,7 +74,9 @@ function mapaUrl(lat: string, lng: string) {
 }
 
 export default function Home() {
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("fc_code") ?? "" : ""
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
@@ -84,12 +86,12 @@ export default function Home() {
   const [encontro, setEncontro] = useState<ReturnType<typeof gerarEncontro> | null>(null);
 
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 5000);
+    const timer = setTimeout(() => setIsLoading(false), 5000);
     const savedCode = localStorage.getItem("fc_code");
     if (savedCode) {
-      setCode(savedCode);
       validateCode(savedCode);
     }
+    return () => clearTimeout(timer);
   }, []);
 
   async function validateCode(codeToValidate: string) {

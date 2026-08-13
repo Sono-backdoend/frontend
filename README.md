@@ -1,16 +1,14 @@
-# Projeto x Front
+# Projeto X FIGHTCLUB
 
-Site de convite digital personalizado para o Arraiá Macabro — 2ª edição do PacJunino. Cada convidado acessa com um código único e visualiza um convite com seu nome, informações da festa e confirmação de presença.
+Site de convite digital personalizado para um clube da luta fictício, inspirado no filme clube da luta. Cada convidado acessa com um código único e visualiza um convite com seu nome e informações do evento, sendo um convite temporário onde o site te trata como maluco após a expiração do convite.
 
 ## Funcionalidades
 
 - Acesso por código único por convidado
 - Boas-vindas personalizadas com nome do convidado
-- Confirmação de presença via WhatsApp
-- Opção de indicar um acompanhante
-- Localização da festa via Google Maps
+- Localização da luta via Google Maps
 - Tela de loading animada com efeito de cortina
-- Partículas animadas no fundo
+- Partículas animadas no fundo dando efeito de VHS/GRAIN
 - Layout responsivo para mobile e desktop
 
 ## Stack
@@ -48,10 +46,17 @@ NEXT_PUBLIC_GOOGLE_MAPS_KEY="sua_chave"
 Frontend `projeto-x/`:
 
 ├── app/
+
 │   ├── page.tsx
+
 │   ├── layout.tsx
+
 │   └── globals.css
+
 └── public/
+
 	├── images/
+	
 	├── fonts/
+	
 	└── animations/

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Lottie from "lottie-react";
 import skullAnimation from "@/public/animations/skull.json";
 
@@ -138,6 +139,29 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen bg-black flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
+
+      {/* ACESSO ADMIN */}
+      <Link
+        href="/admin/login"
+        aria-label="Acesso admin"
+        className="fixed top-4 right-4 z-50 text-neutral-600 hover:text-red-700 transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          className="w-5 h-5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12Z"
+          />
+          <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </Link>
 
       {/* LOADING */}
       {isLoading && (

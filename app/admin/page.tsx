@@ -26,13 +26,20 @@ export default function AdminDashboardPage() {
       router.replace("/admin/login");
       return;
     }
-    setChecking(false);
+
+    const timer = setTimeout(() => {
+      setChecking(false);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [router]);
 
   if (checking) {
     return (
       <main className="min-h-screen bg-black flex items-center justify-center">
-        <p className="text-neutral-600 text-xs tracking-[0.3em] uppercase">carregando</p>
+        <p className="text-neutral-600 text-xs tracking-[0.3em] uppercase">
+          carregando
+        </p>
       </main>
     );
   }
@@ -40,7 +47,9 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-10">
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
-        <h1 className="text-neutral-200 text-lg tracking-[0.3em] uppercase">Admin</h1>
+        <h1 className="text-neutral-200 text-lg tracking-[0.3em] uppercase">
+          Admin
+        </h1>
 
         <nav className="flex gap-2 border-b border-neutral-800">
           {TABS.map((t) => (
@@ -59,9 +68,13 @@ export default function AdminDashboardPage() {
         </nav>
 
         <div>
-          {tab === "create" && <CreateTab onGuestCreated={() => setRefreshKey((k) => k + 1)} />}
+          {tab === "create" && (
+            <CreateTab onGuestCreated={() => setRefreshKey((k) => k + 1)} />
+          )}
           {tab === "guests" && <GuestsTab refreshKey={refreshKey} />}
-          {tab === "import" && <ImportTab onImported={() => setRefreshKey((k) => k + 1)} />}
+          {tab === "import" && (
+            <ImportTab onImported={() => setRefreshKey((k) => k + 1)} />
+          )}
         </div>
       </div>
     </main>

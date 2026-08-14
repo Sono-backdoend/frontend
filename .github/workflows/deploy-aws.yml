@@ -1,14 +1,45 @@
-name: Deploy Front-end AWS
+name: CI/CD Front-end AWS
 
 on:
   push:
     branches:
       - master
 
+  pull_request:
+    branches:
+      - master
+
 jobs:
-  deploy:
-    name: Build and deploy
+  validate:
+    name: Validar front-end
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar lint
+        run: npm run lint
+
+      - name: Validar build
+        run: npm run build
+
+  deploy:
+    name: Deploy front-end AWS
+    runs-on: ubuntu-latest
+
+    needs: validate
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
       - name: Checkout repository
@@ -22,7 +53,6 @@ jobs:
           aws-region: us-east-2
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push Docker image
@@ -40,6 +70,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+
           script: |
             set -e
 
@@ -59,11 +90,16 @@ jobs:
             sudo docker rm -f sono-frontend 2>/dev/null || true
 
             sudo docker run -d \
-            --name sono-frontend \
-            --network sono-network \
-            -p 3000:3000 \
-            --restart unless-stopped \
-            "$IMAGE_URI"
+              --name sono-frontend \
+              --network sono-network \
+              -p 3000:3000 \
+              --restart unless-stopped \
+              "$IMAGE_URI"
+
+            sleep 5
+
+            curl --fail http://localhost:3000
 
             sudo docker image prune -f
+
             sudo docker ps

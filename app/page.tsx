@@ -190,7 +190,7 @@ export default function Home() {
           <div className="w-full max-w-xs flex flex-col gap-4">
             <input
               type="text"
-              placeholder="CÓDIGO"
+              placeholder="CÓDIGO DO CONVIDADO"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}

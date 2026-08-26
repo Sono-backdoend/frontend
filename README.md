@@ -10,6 +10,7 @@ Site de convite digital personalizado para um clube da luta fictício, inspirado
 - Tela de loading animada com efeito de cortina
 - Partículas animadas no fundo dando efeito de VHS/GRAIN
 - Layout responsivo para mobile e desktop
+- Pequenos ajustes de acessibilidade e revisão de textos
 
 ## Stack
 
